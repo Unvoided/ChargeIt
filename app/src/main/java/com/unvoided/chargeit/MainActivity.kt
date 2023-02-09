@@ -2,9 +2,17 @@
 
 package com.unvoided.chargeit
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Looper
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,14 +35,34 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.*
+import com.unvoided.chargeit.data.LocationViewModel
 import com.unvoided.chargeit.pages.ChargersMap
 import com.unvoided.chargeit.pages.Favorites
 import com.unvoided.chargeit.pages.History
 import com.unvoided.chargeit.ui.theme.ChargeItTheme
 
 class MainActivity : ComponentActivity() {
+    private val locationViewModel: LocationViewModel by viewModels()
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var listeningToUpdates = false
+
+    private val locationCallback: LocationCallback = object : LocationCallback() {
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        override fun onLocationResult(locationResult: LocationResult) {
+            val location = locationResult.locations.first()
+            locationViewModel.updateLocation(location)
+            Log.d("Location#Callback", location.toString())
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        startUpdatingLocation()
 
         setContent {
             ChargeItTheme {
@@ -48,11 +76,55 @@ class MainActivity : ComponentActivity() {
                         bottomBar = { ChargeItNavBar(navController) }) { paddingValues ->
                         ChargeItNavHost(
                             navController = navController,
-                            paddingValues = paddingValues
+                            paddingValues = paddingValues,
+                            locationViewModel = locationViewModel
                         )
                     }
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(ACCESS_FINE_LOCATION), 0)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startUpdatingLocation() {
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
+            .setWaitForAccurateLocation(false)
+            .setMinUpdateIntervalMillis(2000)
+            .build()
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        ).addOnSuccessListener {
+            listeningToUpdates = true
+        }.addOnFailureListener { e ->
+            Log.d("Location", "Unable to get location", e)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (listeningToUpdates) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
+    @SuppressLint("MissingSuperCall")
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            recreate()
         }
     }
 }
@@ -78,13 +150,17 @@ fun ChargeItTopBar() {
 }
 
 @Composable
-fun ChargeItNavHost(navController: NavHostController, paddingValues: PaddingValues) {
+fun ChargeItNavHost(
+    navController: NavHostController,
+    paddingValues: PaddingValues,
+    locationViewModel: LocationViewModel
+) {
     NavHost(
         navController = navController,
         startDestination = Pages.ChargersMapPage.route,
         modifier = Modifier.padding(paddingValues)
     ) {
-        composable(Pages.ChargersMapPage.route) { ChargersMap() }
+        composable(Pages.ChargersMapPage.route) { ChargersMap(locationViewModel) }
         composable(Pages.HistoryPage.route) { History() }
         composable(Pages.FavoritesPage.route) { Favorites() }
     }
