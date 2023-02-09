@@ -160,7 +160,7 @@ fun ChargeItNavHost(
         startDestination = Pages.ChargersMapPage.route,
         modifier = Modifier.padding(paddingValues)
     ) {
-        composable(Pages.ChargersMapPage.route) { ChargersMap(locationViewModel) }
+        composable(Pages.ChargersMapPage.route) { ChargersMap(locationViewModel, paddingValues) }
         composable(Pages.HistoryPage.route) { History() }
         composable(Pages.FavoritesPage.route) { Favorites() }
     }

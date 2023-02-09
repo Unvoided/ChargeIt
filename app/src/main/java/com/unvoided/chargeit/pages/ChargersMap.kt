@@ -1,14 +1,85 @@
 package com.unvoided.chargeit.pages
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 import com.unvoided.chargeit.data.LocationViewModel
+import kotlinx.coroutines.launch
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChargersMap(locationViewModel: LocationViewModel) {
-    val currentLocation by locationViewModel.location.observeAsState()
+fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValues) {
+    val locationObj by locationViewModel.location.observeAsState()
+    locationObj?.let {
+        val latitude = it.latitude
+        val longitude = it.longitude
+        val cameraPositionState = rememberCameraPositionState {
+            position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 16f)
+        }
+        val coroutineScope = rememberCoroutineScope()
 
-    Text("Latitute: ${currentLocation?.latitude}, Longitude: ${currentLocation?.longitude}")
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButton = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    ExtendedFloatingActionButton(
+                        onClick = { /*TODO*/ },
+                        icon = { Icon(Icons.Outlined.Power, "Find Chargers") },
+                        text = { Text(text = "Find Chargers") },
+                    )
+                    FloatingActionButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                cameraPositionState.animate(
+                                    update = CameraUpdateFactory.newLatLng(
+                                        LatLng(
+                                            latitude,
+                                            longitude
+                                        )
+                                    ),
+                                    durationMs = 500
+                                )
+                            }
+                        }) {
+                        Icon(Icons.Outlined.MyLocation, "My Location")
+                    }
+                }
+
+            }
+        ) { padding ->
+
+            GoogleMap(
+                modifier = Modifier.padding(padding),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false,
+                    compassEnabled = false,
+                    myLocationButtonEnabled = false,
+                ),
+                properties = MapProperties(
+                    isMyLocationEnabled = true,
+                )
+            ) {
+            }
+
+        }
+
+    }
+
 }
