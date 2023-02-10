@@ -1,6 +1,8 @@
 package com.unvoided.chargeit.pages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -24,7 +26,11 @@ import kotlinx.coroutines.launch
 fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValues) {
     val locationObj by locationViewModel.location.observeAsState()
 
-    AnimatedVisibility(visible = locationObj == null) {
+    AnimatedVisibility(
+        visible = locationObj == null,
+        enter = EnterTransition.None,
+        exit = ExitTransition.None
+    ) {
         Column(
             Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
