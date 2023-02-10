@@ -6,13 +6,13 @@ import androidx.room.PrimaryKey
 import androidx.room.Relation
 
 data class StationWithConnections(
-    @Embedded /* The parent */
+    @Embedded
     val station: StationEntity,
 
     @Relation(
         entity = ConnectionEntity::class,
-        parentColumn = "stationId", /* The column in the @Embedded class (parent) */
-        entityColumn = "stationId", /* The column in the @Relation class (child) */
+        parentColumn = "stationId",
+        entityColumn = "stationId",
     )
     val connections: List<ConnectionEntity>?
 )
