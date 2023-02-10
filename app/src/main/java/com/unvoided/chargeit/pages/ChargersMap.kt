@@ -1,12 +1,15 @@
 package com.unvoided.chargeit.pages
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -20,6 +23,22 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValues) {
     val locationObj by locationViewModel.location.observeAsState()
+
+    AnimatedVisibility(visible = locationObj == null) {
+        Column(
+            Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.size(10.dp))
+            Text(
+                "Loading map \n(Check if location services are enabled)",
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+
     locationObj?.let {
         val latitude = it.latitude
         val longitude = it.longitude
