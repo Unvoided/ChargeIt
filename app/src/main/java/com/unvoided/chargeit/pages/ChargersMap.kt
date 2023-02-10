@@ -47,11 +47,12 @@ fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValu
                         onClick = {
                             coroutineScope.launch {
                                 cameraPositionState.animate(
-                                    update = CameraUpdateFactory.newLatLng(
+                                    update = CameraUpdateFactory.newLatLngZoom(
                                         LatLng(
                                             latitude,
                                             longitude
-                                        )
+                                        ),
+                                        16f
                                     ),
                                     durationMs = 500
                                 )
