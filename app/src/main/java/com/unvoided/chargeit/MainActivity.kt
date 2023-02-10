@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -36,10 +37,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.*
-import com.unvoided.chargeit.data.LocationViewModel
+import com.unvoided.chargeit.data.viewmodels.LocationViewModel
+import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.pages.ChargersMap
 import com.unvoided.chargeit.pages.Favorites
 import com.unvoided.chargeit.pages.History
+import com.unvoided.chargeit.pages.StationsList
 import com.unvoided.chargeit.ui.theme.ChargeItTheme
 
 class MainActivity : ComponentActivity() {
@@ -71,12 +74,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
+                    val stationsViewModel: StationsViewModel = viewModel()
+
                     Scaffold(
                         topBar = { ChargeItTopBar() },
                         bottomBar = { ChargeItNavBar(navController) }) { paddingValues ->
                         ChargeItNavHost(
                             navController = navController,
                             paddingValues = paddingValues,
+                            stationsViewModel = stationsViewModel,
                             locationViewModel = locationViewModel
                         )
                     }
@@ -153,6 +159,7 @@ fun ChargeItTopBar() {
 fun ChargeItNavHost(
     navController: NavHostController,
     paddingValues: PaddingValues,
+    stationsViewModel: StationsViewModel,
     locationViewModel: LocationViewModel
 ) {
     NavHost(
@@ -160,7 +167,22 @@ fun ChargeItNavHost(
         startDestination = Pages.ChargersMapPage.route,
         modifier = Modifier.padding(paddingValues)
     ) {
-        composable(Pages.ChargersMapPage.route) { ChargersMap(locationViewModel, paddingValues) }
+        composable(Pages.ChargersMapPage.route) {
+            ChargersMap(
+                locationViewModel,
+                stationsViewModel,
+                paddingValues,
+                navController
+            )
+        }
+        composable("map/stations") {
+            StationsList(
+                locationViewModel,
+                stationsViewModel,
+                paddingValues,
+                navController
+            )
+        }
         composable(Pages.HistoryPage.route) { History() }
         composable(Pages.FavoritesPage.route) { Favorites() }
     }

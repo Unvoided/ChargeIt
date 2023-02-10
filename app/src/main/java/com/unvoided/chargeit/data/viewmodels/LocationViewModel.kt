@@ -1,4 +1,4 @@
-package com.unvoided.chargeit.data
+package com.unvoided.chargeit.data.viewmodels
 
 import android.location.Location
 import androidx.lifecycle.LiveData

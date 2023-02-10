@@ -13,18 +13,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
-import com.unvoided.chargeit.data.LocationViewModel
+import com.unvoided.chargeit.data.viewmodels.LocationViewModel
+import com.unvoided.chargeit.data.viewmodels.StationsViewModel
+import com.unvoided.chargeit.retrofit.GetStationsInput
 import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValues) {
+fun ChargersMap(
+    locationViewModel: LocationViewModel,
+    stationsViewModel: StationsViewModel,
+    paddingValues: PaddingValues,
+    navController: NavController
+) {
     val locationObj by locationViewModel.location.observeAsState()
+    val stationsList by stationsViewModel.stationsList.observeAsState()
 
     AnimatedVisibility(
         visible = locationObj == null,
@@ -53,6 +62,13 @@ fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValu
         }
         val coroutineScope = rememberCoroutineScope()
 
+        stationsViewModel.fetchStations(
+            GetStationsInput(
+                latitude = latitude,
+                longitude = longitude
+            )
+        )
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             floatingActionButtonPosition = FabPosition.Center,
@@ -64,7 +80,7 @@ fun ChargersMap(locationViewModel: LocationViewModel, paddingValues: PaddingValu
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     ExtendedFloatingActionButton(
-                        onClick = { /*TODO*/ },
+                        onClick = { navController.navigate("map/stations") },
                         icon = { Icon(Icons.Outlined.Power, "Find Chargers") },
                         text = { Text(text = "Find Chargers") },
                     )
