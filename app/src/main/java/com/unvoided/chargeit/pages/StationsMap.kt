@@ -13,10 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
 import com.unvoided.chargeit.data.viewmodels.LocationViewModel
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
@@ -26,11 +27,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChargersMap(
+fun StationsMap(
     locationViewModel: LocationViewModel,
     stationsViewModel: StationsViewModel,
     paddingValues: PaddingValues,
-    navController: NavController
+    navController: NavController,
+    navBackStackEntry: NavBackStackEntry
 ) {
     val locationObj by locationViewModel.location.observeAsState()
     val stationsList by stationsViewModel.stationsList.observeAsState()
@@ -54,13 +56,36 @@ fun ChargersMap(
         }
     }
 
-    locationObj?.let {
-        val latitude = it.latitude
-        val longitude = it.longitude
+    AnimatedVisibility(
+        visible = locationObj != null,
+        enter = EnterTransition.None,
+        exit = ExitTransition.None
+    ) {
+
+        val latitude = locationObj!!.latitude
+        val longitude = locationObj!!.longitude
+        val coroutineScope = rememberCoroutineScope()
         val cameraPositionState = rememberCameraPositionState {
             position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 16f)
         }
-        val coroutineScope = rememberCoroutineScope()
+
+        navBackStackEntry.arguments?.let {
+            if (it.containsKey("latitude") && it.containsKey("longitude")) {
+                coroutineScope.launch {
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(
+                            LatLng(
+                                it.getString("latitude")!!.toDouble(),
+                                it.getString("longitude")!!.toDouble()
+                            ),
+                            16f
+                        ),
+                        durationMs = 500
+                    )
+                    navBackStackEntry.arguments!!.clear()
+                }
+            }
+        }
 
         stationsViewModel.fetchStations(
             GetStationsInput(
@@ -80,7 +105,15 @@ fun ChargersMap(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     ExtendedFloatingActionButton(
-                        onClick = { navController.navigate("map/stations") },
+                        onClick = {
+                            navController.navigate("map/stations") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         icon = { Icon(Icons.Outlined.Power, "Find Chargers") },
                         text = { Text(text = "Find Chargers") },
                     )
@@ -118,10 +151,25 @@ fun ChargersMap(
                     isMyLocationEnabled = true,
                 )
             ) {
+
+                stationsList?.forEach { station ->
+
+                    Marker(
+                        title = station.operatorInfo!!.title!!,
+                        state = MarkerState(
+                            LatLng(
+                                station.addressInfo!!.latitude!!,
+                                station.addressInfo!!.longitude!!
+                            )
+                        ),
+                    ) {
+                    }
+                }
             }
 
         }
 
     }
+
 
 }

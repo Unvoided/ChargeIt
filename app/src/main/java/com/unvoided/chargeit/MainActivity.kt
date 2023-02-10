@@ -32,17 +32,19 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.android.gms.location.*
 import com.unvoided.chargeit.data.viewmodels.LocationViewModel
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.ChargersMap
 import com.unvoided.chargeit.pages.Favorites
 import com.unvoided.chargeit.pages.History
 import com.unvoided.chargeit.pages.StationsList
+import com.unvoided.chargeit.pages.StationsMap
 import com.unvoided.chargeit.ui.theme.ChargeItTheme
 
 class MainActivity : ComponentActivity() {
@@ -167,12 +169,24 @@ fun ChargeItNavHost(
         startDestination = Pages.ChargersMapPage.route,
         modifier = Modifier.padding(paddingValues)
     ) {
-        composable(Pages.ChargersMapPage.route) {
-            ChargersMap(
+        composable(
+            route = Pages.ChargersMapPage.route, arguments = listOf(
+                navArgument("latitude") {
+                    nullable = true
+                    type = NavType.StringType
+                },
+                navArgument("longitude") {
+                    nullable = true
+                    type = NavType.StringType
+                },
+            )
+        ) { navBackStackEntry ->
+            StationsMap(
                 locationViewModel,
                 stationsViewModel,
                 paddingValues,
-                navController
+                navController,
+                navBackStackEntry
             )
         }
         composable("map/stations") {
@@ -224,6 +238,6 @@ fun ChargeItNavBar(navController: NavController) {
 
 enum class Pages(val route: String, val label: String, val icon: ImageVector) {
     HistoryPage("history", "History", Icons.Filled.History),
-    ChargersMapPage("map", "Map", Icons.Filled.Map),
+    ChargersMapPage("map?latitude={latitude}&longitude={longitude}", "Map", Icons.Filled.Map),
     FavoritesPage("favorites", "Favorites", Icons.Filled.Favorite)
 }
