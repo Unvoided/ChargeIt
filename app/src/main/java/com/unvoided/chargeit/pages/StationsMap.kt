@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 fun StationsMap(
     locationViewModel: LocationViewModel,
     stationsViewModel: StationsViewModel,
-    paddingValues: PaddingValues,
     navController: NavController,
     navBackStackEntry: NavBackStackEntry
 ) {
@@ -96,28 +95,12 @@ fun StationsMap(
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButtonPosition = FabPosition.End,
             floatingActionButton = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    horizontalAlignment = Alignment.End
                 ) {
-                    ExtendedFloatingActionButton(
-                        onClick = {
-                            navController.navigate("map/stations") {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(Icons.Outlined.Power, "Find Chargers") },
-                        text = { Text(text = "Find Chargers") },
-                    )
-                    FloatingActionButton(
+                    FilledIconButton(
                         onClick = {
                             coroutineScope.launch {
                                 cameraPositionState.animate(
@@ -131,16 +114,36 @@ fun StationsMap(
                                     durationMs = 500
                                 )
                             }
-                        }) {
+                        },
+                        Modifier.size(50.dp)
+                    ) {
                         Icon(Icons.Outlined.MyLocation, "My Location")
                     }
+                    Spacer(Modifier.size(10.dp))
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            navController.navigate("map/stations") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = false
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(Icons.Outlined.Power, "Find Stations") },
+                        text = {
+                            Text(
+                                text = "Find Stations",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        },
+                    )
                 }
 
             }
         ) { padding ->
 
             GoogleMap(
-                modifier = Modifier.padding(padding),
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
@@ -149,7 +152,8 @@ fun StationsMap(
                 ),
                 properties = MapProperties(
                     isMyLocationEnabled = true,
-                )
+                ),
+                contentPadding = padding
             ) {
 
                 stationsList?.forEach { station ->
@@ -162,6 +166,16 @@ fun StationsMap(
                                 station.addressInfo!!.longitude!!
                             )
                         ),
+                        onClick = {
+                            navController.navigate(route = "map/stations/${station.id}") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                            true
+                        }
                     ) {
                     }
                 }

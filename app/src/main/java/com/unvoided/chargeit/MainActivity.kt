@@ -4,6 +4,7 @@ package com.unvoided.chargeit
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -17,10 +18,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -41,10 +39,7 @@ import androidx.navigation.navArgument
 import com.google.android.gms.location.*
 import com.unvoided.chargeit.data.viewmodels.LocationViewModel
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.Favorites
-import com.unvoided.chargeit.pages.History
-import com.unvoided.chargeit.pages.StationsList
-import com.unvoided.chargeit.pages.StationsMap
+import com.unvoided.chargeit.pages.*
 import com.unvoided.chargeit.ui.theme.ChargeItTheme
 
 class MainActivity : ComponentActivity() {
@@ -79,13 +74,14 @@ class MainActivity : ComponentActivity() {
                     val stationsViewModel: StationsViewModel = viewModel()
 
                     Scaffold(
-                        topBar = { ChargeItTopBar() },
+                        topBar = { ChargeItTopBar(navController) },
                         bottomBar = { ChargeItNavBar(navController) }) { paddingValues ->
                         ChargeItNavHost(
                             navController = navController,
                             paddingValues = paddingValues,
                             stationsViewModel = stationsViewModel,
-                            locationViewModel = locationViewModel
+                            locationViewModel = locationViewModel,
+                            context = this
                         )
                     }
                 }
@@ -138,13 +134,26 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ChargeItTopBar() {
+fun ChargeItTopBar(navController: NavController) {
+    val previousBackStackEntry by navController.currentBackStackEntryAsState()
     TopAppBar(
         title = { Text("ChargeIt", fontWeight = FontWeight.Bold) },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 .compositeOver(MaterialTheme.colorScheme.surface.copy())
         ),
+        navigationIcon = {
+            if ((previousBackStackEntry?.destination?.hierarchy?.count {
+                    !Pages.values().any { page -> page.route == it.route }
+                } ?: 0) > 1) {
+                IconButton(onClick = { navController.navigateUp() }) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            }
+        },
         actions = {
             IconButton(onClick = { /*TODO*/ }) {
                 Icon(
@@ -162,15 +171,16 @@ fun ChargeItNavHost(
     navController: NavHostController,
     paddingValues: PaddingValues,
     stationsViewModel: StationsViewModel,
-    locationViewModel: LocationViewModel
+    locationViewModel: LocationViewModel,
+    context: Context
 ) {
     NavHost(
         navController = navController,
-        startDestination = Pages.ChargersMapPage.route,
+        startDestination = Pages.StationsMapPage.route,
         modifier = Modifier.padding(paddingValues)
     ) {
         composable(
-            route = Pages.ChargersMapPage.route, arguments = listOf(
+            route = Pages.StationsMapPage.route, arguments = listOf(
                 navArgument("latitude") {
                     nullable = true
                     type = NavType.StringType
@@ -184,17 +194,22 @@ fun ChargeItNavHost(
             StationsMap(
                 locationViewModel,
                 stationsViewModel,
-                paddingValues,
                 navController,
                 navBackStackEntry
             )
         }
         composable("map/stations") {
             StationsList(
-                locationViewModel,
                 stationsViewModel,
-                paddingValues,
-                navController
+                navController,
+            )
+        }
+        composable("map/stations/{id}") { navBackStackEntry ->
+            StationPage(
+                stationsViewModel,
+                navController,
+                navBackStackEntry,
+                context
             )
         }
         composable(Pages.HistoryPage.route) { History() }
@@ -238,6 +253,6 @@ fun ChargeItNavBar(navController: NavController) {
 
 enum class Pages(val route: String, val label: String, val icon: ImageVector) {
     HistoryPage("history", "History", Icons.Filled.History),
-    ChargersMapPage("map?latitude={latitude}&longitude={longitude}", "Map", Icons.Filled.Map),
+    StationsMapPage("map?latitude={latitude}&longitude={longitude}", "Map", Icons.Filled.Map),
     FavoritesPage("favorites", "Favorites", Icons.Filled.Favorite)
 }
