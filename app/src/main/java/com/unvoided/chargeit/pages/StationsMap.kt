@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
@@ -134,7 +135,8 @@ fun StationsMap(
                         text = {
                             Text(
                                 text = "Find Stations",
-                                style = MaterialTheme.typography.labelLarge
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
                             )
                         },
                     )

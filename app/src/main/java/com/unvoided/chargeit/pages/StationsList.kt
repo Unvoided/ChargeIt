@@ -122,9 +122,26 @@ fun StationItem(station: Station, navController: NavController) {
                     )
                 }
             }, leadingContent = {
-                Badge {
-                    Text(text = "${station.addressInfo!!.distance?.roundToInt()} km")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                        Text(text = "${station.addressInfo!!.distance?.roundToInt()} km")
+                    }
+                    Spacer(modifier = Modifier.size(10.dp))
+                    Badge(containerColor = if (station.statusType!!.isOperational!!) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
+                        Text(
+                            text = if (station.statusType?.isOperational == null) {
+                                "Unknown"
+                            } else {
+                                if (station.statusType!!.isOperational!!) {
+                                    "Operational"
+                                } else {
+                                    "Not Operational"
+                                }
+                            }
+                        )
+                    }
                 }
+
             })
     }
 
