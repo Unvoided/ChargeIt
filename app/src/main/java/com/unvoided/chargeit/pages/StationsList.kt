@@ -75,7 +75,7 @@ fun StationsList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StationItem(station: Station, navController: NavController) {
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxSize(),
         onClick = {
@@ -86,10 +86,7 @@ fun StationItem(station: Station, navController: NavController) {
                 launchSingleTop = true
                 restoreState = false
             }
-        },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.inverseOnSurface
-        )
+        }
     ) {
         ListItem(
             modifier = Modifier.padding(10.dp),

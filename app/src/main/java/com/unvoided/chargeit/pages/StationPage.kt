@@ -20,7 +20,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,6 +29,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
+import com.unvoided.chargeit.pages.components.ShowIfLoggedIn
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -93,15 +93,13 @@ fun StationPage(
 
             }) { pad ->
                 Column(Modifier.padding(pad)) {
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier.padding(
                             top = 5.dp
-                        ), colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                                .compositeOver(MaterialTheme.colorScheme.surface.copy())
                         )
                     ) {
-                        ListItem(modifier = Modifier.padding(10.dp),
+                        ListItem(
+                            modifier = Modifier.padding(10.dp),
                             colors = ListItemDefaults.colors(
                                 containerColor = Color.Transparent
                             ),
@@ -147,15 +145,12 @@ fun StationPage(
                             })
                     } // Top Card End
                     Spacer(modifier = Modifier.size(5.dp))
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(
                                 bottom = 5.dp
-                            ), colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                                .compositeOver(MaterialTheme.colorScheme.surface.copy())
-                        )
+                            )
                     ) {
                         TabRow(selectedTabIndex = state, containerColor = Color.Transparent) {
                             titles.forEachIndexed { index, title ->
@@ -175,7 +170,7 @@ fun StationPage(
                                 ChargersTab(station)
                             }
                             2 -> {
-                                ReviewsTab(station)
+                                ReviewsTab(navController, station)
                             }
                         }
                     }
@@ -328,6 +323,8 @@ fun ChargersTab(station: Station) {
 }
 
 @Composable
-fun ReviewsTab(station: Station) {
-    Text("test3")
+fun ReviewsTab(navController: NavHostController, station: Station) {
+    ShowIfLoggedIn(navController) {
+        Text("Reviews ${it.displayName}")
+    }
 }
