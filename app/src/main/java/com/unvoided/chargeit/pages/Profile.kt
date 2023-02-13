@@ -8,10 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts.StartActivityFo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -40,103 +38,112 @@ fun Profile() {
     Firebase.auth.addAuthStateListener {
         user = it.currentUser
     }
-    val launcher = rememberFirebaseAuthLauncher(onAuthComplete = { result ->
-        user = result.user
-    }, onAuthError = {
-        user = null
-    })
-    val logoutHandler = {
-        Firebase.auth.signOut()
-        user = null
-    }
 
     if (user == null) {
-        SignIn(launcher)
+        SignIn()
     } else {
-        ProfilePage(logoutHandler)
+        ProfilePage()
     }
 
 }
 
 @Composable
-fun SignIn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
+fun SignIn() {
+    val launcher = rememberFirebaseAuthLauncher(onAuthComplete = {}, onAuthError = {})
     val token = stringResource(R.string.default_web_client_id)
     val context = LocalContext.current
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(top = 100.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
 
-        Text(
-            text = "Sign In",
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Spacer(Modifier.size(30.dp))
-        FilledTonalButton(onClick = {
-            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(token).requestEmail().build()
-            val googleSignInClient = GoogleSignIn.getClient(context, gso)
-            launcher.launch(googleSignInClient.signInIntent)
-        }) {
+    ElevatedCard(
+        modifier = Modifier
+            .wrapContentSize()
+            .padding(20.dp)
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(50.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+
             Text(
-                "Sign In With Google",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold
+                text = "Sign In",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
             )
+            Spacer(Modifier.size(30.dp))
+            FilledTonalButton(onClick = {
+                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestIdToken(token).requestEmail().build()
+                val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                launcher.launch(googleSignInClient.signInIntent)
+            }) {
+                Text(
+                    "Sign In With Google",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
         }
     }
+
 }
 
 @Composable
-fun ProfilePage(logoutHandler: () -> Unit) {
+fun ProfilePage() {
     var user by remember { mutableStateOf(Firebase.auth.currentUser) }
     Firebase.auth.addAuthStateListener {
         user = it.currentUser
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(top = 100.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+    ElevatedCard(
+        modifier = Modifier
+            .wrapContentSize()
+            .padding(20.dp)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(
-                user!!.photoUrl,
-                contentScale = ContentScale.FillBounds,
-                filterQuality = FilterQuality.High
-            ),
-            contentDescription = "Account",
+        Column(
             Modifier
-                .clip(CircleShape)
-                .size(100.dp)
-        )
-        Spacer(Modifier.size(20.dp))
-        Text(
-            text = "Logged In! Welcome, ${user!!.displayName}",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Spacer(Modifier.size(30.dp))
-        FilledTonalButton(
-            onClick = logoutHandler,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError
-            )
+                .fillMaxWidth()
+                .padding(50.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
-            Text(
-                "Logout",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+            Image(
+                painter = rememberAsyncImagePainter(
+                    user!!.photoUrl,
+                    contentScale = ContentScale.FillBounds,
+                    filterQuality = FilterQuality.High
+                ),
+                contentDescription = "Account",
+                Modifier
+                    .clip(CircleShape)
+                    .size(100.dp)
             )
+            Spacer(Modifier.size(20.dp))
+            Text(
+                text = "Welcome, ${user!!.displayName}",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.size(30.dp))
+            FilledTonalButton(
+                onClick = { Firebase.auth.signOut() },
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text(
+                    "Logout",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                )
+            }
         }
     }
+
 }
 
 @Composable
