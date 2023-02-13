@@ -14,17 +14,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -36,7 +38,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import coil.compose.rememberAsyncImagePainter
 import com.google.android.gms.location.*
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.unvoided.chargeit.data.viewmodels.LocationViewModel
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.pages.*
@@ -44,10 +49,8 @@ import com.unvoided.chargeit.ui.theme.ChargeItTheme
 
 class MainActivity : ComponentActivity() {
     private val locationViewModel: LocationViewModel by viewModels()
-
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var listeningToUpdates = false
-
     private val locationCallback: LocationCallback = object : LocationCallback() {
         @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         override fun onLocationResult(locationResult: LocationResult) {
@@ -72,7 +75,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val stationsViewModel: StationsViewModel = viewModel()
-
                     Scaffold(
                         topBar = { ChargeItTopBar(navController) },
                         bottomBar = { ChargeItNavBar(navController) }) { paddingValues ->
@@ -135,6 +137,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ChargeItTopBar(navController: NavController) {
+    var user by remember { mutableStateOf(Firebase.auth.currentUser) }
+    Firebase.auth.addAuthStateListener {
+        user = it.currentUser
+    }
+
     val previousBackStackEntry by navController.currentBackStackEntryAsState()
     TopAppBar(
         title = { Text("ChargeIt", fontWeight = FontWeight.Bold) },
@@ -155,11 +162,31 @@ fun ChargeItTopBar(navController: NavController) {
             }
         },
         actions = {
-            IconButton(onClick = { /*TODO*/ }) {
-                Icon(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = "Account",
-                )
+            IconButton(onClick = {
+                navController.navigate("profile") {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }) {
+                if (user != null && user?.photoUrl != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            user!!.photoUrl
+                        ),
+                        contentDescription = "Account",
+                        Modifier
+                            .clip(CircleShape)
+                            .size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = "Account"
+                    )
+                }
             }
         }
     )
@@ -214,6 +241,7 @@ fun ChargeItNavHost(
         }
         composable(Pages.HistoryPage.route) { History() }
         composable(Pages.FavoritesPage.route) { Favorites() }
+        composable("profile") { Profile() }
     }
 }
 
@@ -247,7 +275,6 @@ fun ChargeItNavBar(navController: NavController) {
             )
 
         }
-
     }
 }
 

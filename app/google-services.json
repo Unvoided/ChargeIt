@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "945765104009",
+    "project_id": "chargeit-71a1d",
+    "storage_bucket": "chargeit-71a1d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945765104009:android:d3623ce849c6da04b7c958",
+        "android_client_info": {
+          "package_name": "com.unvoided.chargeit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945765104009-aspj98bj87uk9od011lrmh1novjsk5g2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5hDC5eAUN58AnRSseMnn0uGnbChWnNb4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945765104009-aspj98bj87uk9od011lrmh1novjsk5g2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
