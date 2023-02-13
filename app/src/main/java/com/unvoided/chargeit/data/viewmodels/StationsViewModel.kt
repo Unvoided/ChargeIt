@@ -10,9 +10,13 @@ import com.unvoided.chargeit.retrofit.OpenChargeMap
 class StationsViewModel : ViewModel() {
     private val openChargeMap = OpenChargeMap()
     private val _stations = MutableLiveData<List<Station>>()
+    private val _station = MutableLiveData<Station>()
 
     val stationsList: LiveData<List<Station>>
         get() = _stations
+
+    val station: LiveData<Station>
+        get() = _station
 
     fun fetchStations(
         params: GetStationsInput,
@@ -20,5 +24,20 @@ class StationsViewModel : ViewModel() {
         openChargeMap.getStations(params) { stations, _ ->
             _stations.value = stations
         }
+    }
+
+    fun fetchStationById(id: Int) {
+        var fStation: Station? = null
+        _stations.value?.let { stations ->
+            fStation = stations.firstOrNull { it.id == id }
+        }
+        if (fStation == null) {
+            openChargeMap.getStationById(id) { stations, _ ->
+                _station.value = stations!!.first()
+            }
+        } else {
+            _station.value = fStation
+        }
+
     }
 }

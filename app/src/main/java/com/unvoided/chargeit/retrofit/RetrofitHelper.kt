@@ -25,7 +25,8 @@ class OpenChargeMap {
     ) {
         service.getStations(
             latitude = input.latitude,
-            longitude = input.longitude
+            longitude = input.longitude,
+            maxResults = input.maxResults
         ).enqueue(object : Callback<List<Station>> {
             override fun onResponse(
                 call: Call<List<Station>>,
@@ -47,10 +48,38 @@ class OpenChargeMap {
             }
         })
     }
+
+    fun getStationById(
+        id: Int,
+        callback: (data: List<Station>?, error: Throwable?) -> Unit
+    ) {
+        service.getStationById(id).enqueue(object : Callback<List<Station>> {
+            override fun onResponse(
+                call: Call<List<Station>>,
+                response: Response<List<Station>>
+            ) {
+                if (response.isSuccessful) {
+                    callback(response.body(), null)
+                } else {
+                    callback(null, Throwable("NetworkError"))
+                }
+            }
+
+            override fun onFailure(call: Call<List<Station>>, t: Throwable) {
+                callback(null, t)
+            }
+        })
+    }
 }
 
 data class GetStationsInput(
     val maxResults: Int = 10,
     val latitude: Double,
     val longitude: Double
+)
+
+data class GetStationByIdInput(
+    val latitude: Double,
+    val longitude: Double,
+    val id: Int,
 )

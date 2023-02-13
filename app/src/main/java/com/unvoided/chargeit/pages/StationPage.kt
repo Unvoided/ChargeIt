@@ -29,6 +29,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
+import com.unvoided.chargeit.pages.components.LoadingComponent
 import com.unvoided.chargeit.pages.components.ShowIfLoggedIn
 import kotlin.math.roundToInt
 
@@ -41,143 +42,157 @@ fun StationPage(
     context: Context
 ) {
     navBackStackEntry.arguments?.getString("id")?.let { stationId ->
-        val stationsObj by stationsViewModel.stationsList.observeAsState()
+        stationsViewModel.fetchStationById(stationId.toInt())
+        val stationObj by stationsViewModel.station.observeAsState()
 
-        stationsObj?.let { stations ->
-            var state by remember { mutableStateOf(0) }
-            val station = stations.first { it.id == stationId.toInt() }
-            val titles =
-                listOf("Info", "Connections (${station.connections?.count() ?: 0})", "Reviews")
-            Scaffold(floatingActionButtonPosition = FabPosition.End, floatingActionButton = {
-                when (state) {
-                    0 -> {
-                        Column(horizontalAlignment = Alignment.End) {
-                            FloatingActionButton(onClick = {
-                                navController.navigate(route = "map?latitude=${station.addressInfo!!.latitude}&longitude=${station.addressInfo!!.longitude}") {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+        LoadingComponent(
+            isLoading = stationObj == null || stationObj!!.id != stationId.toInt(),
+            loadingMessage = "Loading Station Page"
+        ) {
+            stationObj?.let { station ->
+                var state by remember { mutableStateOf(0) }
+                val titles =
+                    listOf("Info", "Connections (${station.connections?.count() ?: 0})", "Reviews")
+                Scaffold(floatingActionButtonPosition = FabPosition.End, floatingActionButton = {
+                    when (state) {
+                        0 -> {
+                            Column(horizontalAlignment = Alignment.End) {
+                                FloatingActionButton(onClick = {
+                                    navController.navigate(route = "map?latitude=${station.addressInfo!!.latitude}&longitude=${station.addressInfo!!.longitude}") {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = false
                                     }
-                                    launchSingleTop = true
-                                    restoreState = false
+                                }) {
+                                    Icon(Icons.Default.LocationOn, "Location")
                                 }
-                            }) {
-                                Icon(Icons.Default.LocationOn, "Location")
-                            }
-                            Spacer(Modifier.size(10.dp))
-                            FloatingActionButton(onClick = {
-                                val gmmIntentUri =
-                                    Uri.parse("geo:${station.addressInfo!!.latitude},${station.addressInfo!!.longitude}?q=${station.addressInfo!!.latitude},${station.addressInfo!!.longitude}(${station.operatorInfo!!.title})")
-                                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
-                                mapIntent.setPackage("com.google.android.apps.maps")
-                                startActivity(context, mapIntent, null)
+                                Spacer(Modifier.size(10.dp))
+                                FloatingActionButton(onClick = {
+                                    val gmmIntentUri =
+                                        Uri.parse("geo:${station.addressInfo!!.latitude},${station.addressInfo!!.longitude}?q=${station.addressInfo!!.latitude},${station.addressInfo!!.longitude}(${station.operatorInfo!!.title})")
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                    mapIntent.setPackage("com.google.android.apps.maps")
+                                    startActivity(context, mapIntent, null)
 
-                            }) {
-                                Icon(Icons.Default.Directions, "Navigate on Google Maps")
-                            }
-                            Spacer(Modifier.size(10.dp))
-                            ExtendedFloatingActionButton(
-                                onClick = { /*TODO handle used*/ },
-                                icon = { Icon(Icons.Outlined.History, "Add to history") },
-                                text = {
-                                    Text(
-                                        text = "Add to History",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-
-                                )
-                        }
-                    }
-                }
-
-            }) { pad ->
-                Column(Modifier.padding(pad)) {
-                    ElevatedCard(
-                        modifier = Modifier.padding(
-                            top = 5.dp
-                        )
-                    ) {
-                        ListItem(
-                            modifier = Modifier.padding(10.dp),
-                            colors = ListItemDefaults.colors(
-                                containerColor = Color.Transparent
-                            ),
-                            headlineText = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${station.operatorInfo!!.title}",
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.headlineLarge
-                                    )
-                                    Spacer(modifier = Modifier.size(10.dp))
-                                    Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                                        Text(text = "${station.addressInfo!!.distance?.roundToInt()} km")
-                                    }
-                                    Spacer(modifier = Modifier.size(10.dp))
-                                    Badge(containerColor = if (station.statusType!!.isOperational!!) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
+                                }) {
+                                    Icon(Icons.Default.Directions, "Navigate on Google Maps")
+                                }
+                                Spacer(Modifier.size(10.dp))
+                                ExtendedFloatingActionButton(
+                                    onClick = { /*TODO handle used*/ },
+                                    icon = { Icon(Icons.Outlined.History, "Add to history") },
+                                    text = {
                                         Text(
-                                            text = if (station.statusType?.isOperational == null) {
-                                                "Unknown"
-                                            } else {
-                                                if (station.statusType!!.isOperational!!) {
-                                                    "Operational"
-                                                } else {
-                                                    "Not Operational"
-                                                }
-                                            }
+                                            text = "Add to History",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                    }
-                                }
+                                    },
 
-                            },
-                            supportingText = {
-                                Text("${station.addressInfo!!.title}")
-                                Text("${station.addressInfo!!.town}")
-                            },
-                            trailingContent = {
-                                IconButton(onClick = {/*TODO handle favorite*/ }) {
-                                    Icon(Icons.Outlined.Favorite, "Favorite")
-                                }
-                            })
-                    } // Top Card End
-                    Spacer(modifier = Modifier.size(5.dp))
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(
-                                bottom = 5.dp
-                            )
-                    ) {
-                        TabRow(selectedTabIndex = state, containerColor = Color.Transparent) {
-                            titles.forEachIndexed { index, title ->
-                                Tab(selected = state == index, onClick = { state = index }, text = {
-                                    Text(
-                                        text = title, maxLines = 2, overflow = TextOverflow.Ellipsis
                                     )
-                                })
-                            }
-                        }
-
-                        when (state) {
-                            0 -> {
-                                InfoTab(station)
-                            }
-                            1 -> {
-                                ChargersTab(station)
-                            }
-                            2 -> {
-                                ReviewsTab(navController, station)
                             }
                         }
                     }
-                }
 
+                }) { pad ->
+                    Column(Modifier.padding(pad)) {
+                        ElevatedCard(
+                            modifier = Modifier.padding(
+                                top = 5.dp
+                            )
+                        ) {
+                            ListItem(
+                                modifier = Modifier.padding(10.dp),
+                                colors = ListItemDefaults.colors(
+                                    containerColor = Color.Transparent
+                                ),
+                                headlineText = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = "${station.operatorInfo!!.title}",
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.headlineLarge,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Spacer(modifier = Modifier.size(10.dp))
+                                        station.addressInfo?.distance?.let {
+                                            Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                                                Text(text = "${it.roundToInt()} km")
+                                            }
+                                            Spacer(modifier = Modifier.size(10.dp))
+                                        }
+                                        Badge(containerColor = if (station.statusType?.isOperational == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
+                                            Text(
+                                                text = if (station.statusType?.isOperational == null) {
+                                                    "Unknown"
+                                                } else {
+                                                    if (station.statusType!!.isOperational!!) {
+                                                        "Operational"
+                                                    } else {
+                                                        "Not Operational"
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+
+                                },
+                                supportingText = {
+                                    Text("${station.addressInfo!!.title}")
+                                    Text("${station.addressInfo!!.town}")
+                                },
+                                trailingContent = {
+                                    IconButton(onClick = {/*TODO handle favorite*/ }) {
+                                        Icon(Icons.Outlined.Favorite, "Favorite")
+                                    }
+                                })
+                        } // Top Card End
+                        Spacer(modifier = Modifier.size(5.dp))
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(
+                                    bottom = 5.dp
+                                )
+                        ) {
+                            TabRow(selectedTabIndex = state, containerColor = Color.Transparent) {
+                                titles.forEachIndexed { index, title ->
+                                    Tab(
+                                        selected = state == index,
+                                        onClick = { state = index },
+                                        text = {
+                                            Text(
+                                                text = title,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        })
+                                }
+                            }
+
+                            when (state) {
+                                0 -> {
+                                    InfoTab(station)
+                                }
+                                1 -> {
+                                    ChargersTab(station)
+                                }
+                                2 -> {
+                                    ReviewsTab(navController, station)
+                                }
+                            }
+                        }
+                    }
+
+                }
             }
         }
+
     }
 }
 
@@ -266,7 +281,7 @@ fun ChargersTab(station: Station) {
                                 }
                                 Spacer(modifier = Modifier.size(10.dp))
                             }
-                            Badge(containerColor = if (it.statusType!!.isOperational!!) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
+                            Badge(containerColor = if (it.statusType?.isOperational == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
                                 Text(
                                     text = if (it.statusType?.isOperational == null) {
                                         "Unknown"
@@ -288,31 +303,37 @@ fun ChargersTab(station: Station) {
                     )
                     Column(modifier = Modifier.padding(top = 5.dp)) {
                         Row {
-                            Text(
-                                text = "Amps: ",
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "${it.amps}A",
-                            )
+                            it.amps?.let {
+                                Text(
+                                    text = "Amps: ",
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "${it}A",
+                                )
+                            }
                         }
                         Row {
-                            Text(
-                                text = "Voltage: ",
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "${it.voltage}V",
-                            )
+                            it.voltage?.let {
+                                Text(
+                                    text = "Voltage: ",
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "${it}V",
+                                )
+                            }
                         }
                         Row {
-                            Text(
-                                text = "Power: ",
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "${it.powerKw}kW",
-                            )
+                            it.powerKw?.let {
+                                Text(
+                                    text = "Power: ",
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "${it}kW",
+                                )
+                            }
                         }
                     }
                 })
