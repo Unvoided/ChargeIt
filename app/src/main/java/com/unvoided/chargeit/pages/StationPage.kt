@@ -8,8 +8,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Favorite
@@ -31,11 +29,12 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.firestore.Users
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.components.LoadingComponent
-import com.unvoided.chargeit.pages.components.ShowIfLoggedIn
+import com.unvoided.chargeit.pages.subpages.ChargersTab
+import com.unvoided.chargeit.pages.subpages.InfoTab
+import com.unvoided.chargeit.pages.subpages.ReviewsTab
+import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -222,159 +221,7 @@ fun StationPage(
     }
 }
 
-@Composable
-fun InfoTab(station: Station) {
-    station.usageCost?.let {
-        ListItem(headlineText = {
-            Text("Usage Cost", fontWeight = FontWeight.Bold)
-        }, supportingText = {
-            Text(
-                modifier = Modifier.padding(5.dp),
-                text = it,
-                style = MaterialTheme.typography.labelLarge
-            )
-        })
-    }
-    Divider()
-    station.numberOfPoints?.let {
-        ListItem(
-            headlineText = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Number of Points",
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.size(10.dp))
-                    Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                        Text(text = "$it")
-                    }
-                }
-            },
-        )
-    }
-    Divider()
-    station.operatorInfo?.let {
-        if (it.contactEmail != null || it.phonePrimaryContact != null) ListItem(headlineText = {
-            Text("Contact", fontWeight = FontWeight.Bold)
-        }, supportingText = {
-            Row(modifier = Modifier.padding(5.dp)) {
-                it.phonePrimaryContact?.let { number ->
 
-                    Text(
-                        text = "Phone number:", fontWeight = FontWeight.Bold
-                    )
-                    Text(text = " $number")
-
-                }
-                it.contactEmail?.let { email ->
-                    Text(
-                        text = "Email:", fontWeight = FontWeight.Bold
-                    )
-                    Text(text = " $email")
-                }
-            }
-
-        })
-    }
-
-}
-
-@Composable
-fun ChargersTab(station: Station) {
-    val lazyListState = rememberLazyListState()
-    LazyColumn(
-        state = lazyListState
-    ) {
-        station.connections?.forEach {
-            item {
-                ListItem(headlineText = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${it.connectionType?.title}",
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Row {
-                            it.quantity?.let { qty ->
-                                Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                                    Text(text = "$qty")
-                                }
-                                Spacer(modifier = Modifier.size(10.dp))
-                            }
-                            Badge(containerColor = if (it.statusType?.isOperational == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) {
-                                Text(
-                                    text = if (it.statusType?.isOperational == null) {
-                                        "Unknown"
-                                    } else {
-                                        if (it.statusType!!.isOperational!!) {
-                                            "Operational"
-                                        } else {
-                                            "Not Operational"
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                    }
-                }, supportingText = {
-                    Text(
-                        text = "${it.connectionType?.formalName}",
-                    )
-                    Column(modifier = Modifier.padding(top = 5.dp)) {
-                        Row {
-                            it.amps?.let {
-                                Text(
-                                    text = "Amps: ",
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = "${it}A",
-                                )
-                            }
-                        }
-                        Row {
-                            it.voltage?.let {
-                                Text(
-                                    text = "Voltage: ",
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = "${it}V",
-                                )
-                            }
-                        }
-                        Row {
-                            it.powerKw?.let {
-                                Text(
-                                    text = "Power: ",
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = "${it}kW",
-                                )
-                            }
-                        }
-                    }
-                })
-                Divider()
-            }
-        }
-    }
-}
-
-@Composable
-fun ReviewsTab(navController: NavHostController, station: Station) {
-    ShowIfLoggedIn(navController) {
-        Text("Reviews ${it.displayName}")
-    }
-}
 
 suspend fun handleFavorite(
     context: Context,

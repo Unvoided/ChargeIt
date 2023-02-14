@@ -6,7 +6,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import com.unvoided.chargeit.pages.components.ShowIfLoggedIn
+import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
 
 @Composable
 fun History(navController: NavHostController) {

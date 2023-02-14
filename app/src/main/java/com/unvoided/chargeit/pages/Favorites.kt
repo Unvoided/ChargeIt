@@ -22,9 +22,9 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.components.LoadingComponent
-import com.unvoided.chargeit.pages.components.ShowIfLoggedIn
-import com.unvoided.chargeit.pages.components.ShowIfNotEmpty
+import com.unvoided.chargeit.ui.theme.components.LoadingComponent
+import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
+import com.unvoided.chargeit.ui.theme.components.ShowIfNotEmpty
 import kotlinx.coroutines.launch
 
 @SuppressLint("CoroutineCreationDuringComposition")

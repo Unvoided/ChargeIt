@@ -1,4 +1,4 @@
-package com.unvoided.chargeit.pages.components
+package com.unvoided.chargeit.ui.theme.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.ElevatedCard

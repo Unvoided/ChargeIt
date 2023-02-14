@@ -18,8 +18,8 @@ import com.google.android.gms.maps.model.*
 import com.google.maps.android.compose.*
 import com.unvoided.chargeit.data.viewmodels.LocationViewModel
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.components.LoadingComponent
 import com.unvoided.chargeit.retrofit.GetStationsInput
+import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import kotlinx.coroutines.launch
 
 

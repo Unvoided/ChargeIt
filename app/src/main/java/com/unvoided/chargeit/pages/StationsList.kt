@@ -18,7 +18,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
-import com.unvoided.chargeit.pages.components.LoadingComponent
+import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import kotlin.math.roundToInt
 
 @Composable
