@@ -239,7 +239,7 @@ fun ChargeItNavHost(
                 context
             )
         }
-        composable(Pages.HistoryPage.route) { History(navController) }
+        composable(Pages.HistoryPage.route) { History(navController, stationsViewModel) }
         composable(Pages.FavoritesPage.route) { Favorites(navController, stationsViewModel) }
         composable("profile") { Profile() }
     }

@@ -59,7 +59,6 @@ fun StationPage(
                 val coroutineScope = rememberCoroutineScope()
                 var state by remember { mutableStateOf(0) }
                 var isFavorite by remember { mutableStateOf(false) }
-                val dialogMessage = remember { mutableStateOf("") }
                 val isInCurrentDayHistory = remember { mutableStateOf(false) }
                 val snackState = remember { SnackbarHostState() }
 
@@ -81,7 +80,7 @@ fun StationPage(
                     message = "Mark station as visited today?"
                 ) {
                     coroutineScope.launch {
-                        handleUsed(stationId.toInt(), isInCurrentDayHistory)
+                        handleUsed(stationId.toInt(), isInCurrentDayHistory, snackState)
                     }
                 }
 
@@ -266,7 +265,11 @@ fun StationPage(
 }
 
 
-suspend fun handleUsed(stationId: Int, history: MutableState<Boolean>) {
+suspend fun handleUsed(
+    stationId: Int,
+    history: MutableState<Boolean>,
+    snackbarHostState: SnackbarHostState,
+) {
     val userDbActions = Users()
 
     if (!userDbActions.isStationInCurrentDayHistory(LocalDate.now(), stationId)) {
@@ -274,6 +277,11 @@ suspend fun handleUsed(stationId: Int, history: MutableState<Boolean>) {
     }
 
     history.value = userDbActions.isStationInCurrentDayHistory(LocalDate.now(), stationId)
+    snackbarHostState.showSnackbar(
+        "Successfully added to history!",
+        duration = SnackbarDuration.Short,
+        withDismissAction = true
+    )
 }
 
 suspend fun handleFavorite(
