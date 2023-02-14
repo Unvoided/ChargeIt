@@ -5,7 +5,6 @@ package com.unvoided.chargeit.pages
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -36,6 +35,8 @@ import com.unvoided.chargeit.pages.subpages.InfoTab
 import com.unvoided.chargeit.pages.subpages.ReviewsTab
 import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.*
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -58,17 +59,34 @@ fun StationPage(
                 val coroutineScope = rememberCoroutineScope()
                 var state by remember { mutableStateOf(0) }
                 var isFavorite by remember { mutableStateOf(false) }
+                val dialogMessage = remember { mutableStateOf("") }
+                val isInCurrentDayHistory = remember { mutableStateOf(false) }
+                val snackState = remember { SnackbarHostState() }
 
                 coroutineScope.launch {
                     if (Firebase.auth.currentUser != null) {
                         isFavorite = Users().isFavorite(stationId.toInt())
+                        isInCurrentDayHistory.value =
+                            Users().isStationInCurrentDayHistory(LocalDate.now(), stationId.toInt())
                     }
                 }
 
                 val titles =
                     listOf("Info", "Connections (${station.connections?.count() ?: 0})", "Reviews")
 
-                Scaffold(floatingActionButtonPosition = FabPosition.End,
+                val openDialog = remember { mutableStateOf(false) }
+
+                BasicActionDialog(
+                    openDialog = openDialog,
+                    message = "Mark station as visited today?"
+                ) {
+                    coroutineScope.launch {
+                        handleUsed(stationId.toInt(), isInCurrentDayHistory)
+                    }
+                }
+
+                Scaffold(
+                    floatingActionButtonPosition = FabPosition.End,
                     floatingActionButton = {
                         when (state) {
                             0 -> {
@@ -81,7 +99,7 @@ fun StationPage(
                                             launchSingleTop = true
                                             restoreState = false
                                         }
-                                    }) {/*TODO handle used*/
+                                    }) {
                                         Icon(Icons.Default.LocationOn, "Location")
                                     }
                                     Spacer(Modifier.size(10.dp))
@@ -97,7 +115,27 @@ fun StationPage(
                                     }
                                     Spacer(Modifier.size(10.dp))
                                     ExtendedFloatingActionButton(
-                                        onClick = { /*TODO handle used*/ },
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                if (isUserAuthenticated(
+                                                        snackState,
+                                                        navController
+                                                    ) && !isInCurrentDayHistory.value
+                                                ) {
+                                                    openDialog.value = true
+                                                } else if (isUserAuthenticated(
+                                                        snackState,
+                                                        navController
+                                                    )
+                                                ) {
+                                                    snackState.showSnackbar(
+                                                        "Station already in today's history!",
+                                                        duration = SnackbarDuration.Short,
+                                                        withDismissAction = true
+                                                    )
+                                                }
+                                            }
+                                        },
                                         icon = { Icon(Icons.Outlined.History, "Add to history") },
                                         text = {
                                             Text(
@@ -165,10 +203,11 @@ fun StationPage(
                                 trailingContent = {
                                     IconButton(onClick = {
                                         coroutineScope.launch {
-                                            handleFavorite(
-                                                context,
-                                                stationId.toInt(),
-                                            ) { updateFav: Boolean -> isFavorite = updateFav }
+                                            if (isUserAuthenticated(snackState, navController)) {
+                                                handleFavorite(
+                                                    stationId.toInt(),
+                                                ) { updateFav: Boolean -> isFavorite = updateFav }
+                                            }
                                         }
                                     }) {
                                         Icon(
@@ -213,7 +252,12 @@ fun StationPage(
                             }
                         }
                     }
-
+                }
+                Box(Modifier.fillMaxSize()) {
+                    SnackbarHost(
+                        hostState = snackState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
                 }
             }
         }
@@ -222,21 +266,20 @@ fun StationPage(
 }
 
 
+suspend fun handleUsed(stationId: Int, history: MutableState<Boolean>) {
+    val userDbActions = Users()
 
-suspend fun handleFavorite(
-    context: Context,
-    stationId: Int,
-    toggleFavouriteCallback: (Boolean) -> Unit
-) {
-    val user = Firebase.auth.currentUser
-
-    if (user == null) {
-        Toast.makeText(
-            context, "You need to be logged in to do that!", Toast.LENGTH_SHORT
-        ).show()
-        return
+    if (!userDbActions.isStationInCurrentDayHistory(LocalDate.now(), stationId)) {
+        userDbActions.addToHistory(LocalDate.now(), stationId)
     }
 
+    history.value = userDbActions.isStationInCurrentDayHistory(LocalDate.now(), stationId)
+}
+
+suspend fun handleFavorite(
+    stationId: Int,
+    toggleFavoriteCallback: (Boolean) -> Unit
+) {
     val userDbActions = Users()
 
     if (userDbActions.isFavorite(stationId)) {
@@ -245,7 +288,32 @@ suspend fun handleFavorite(
         userDbActions.addFavorite(stationId)
     }
 
-    toggleFavouriteCallback(userDbActions.isFavorite(stationId))
+    toggleFavoriteCallback(userDbActions.isFavorite(stationId))
 }
 
+suspend fun isUserAuthenticated(
+    snackbarHostState: SnackbarHostState,
+    navController: NavHostController
+): Boolean {
+    val user = Firebase.auth.currentUser
+    if (user == null) {
+        val result = snackbarHostState.showSnackbar(
+            "You need to be logged in to do that!",
+            duration = SnackbarDuration.Short,
+            actionLabel = "Sign In"
+        )
+        when (result) {
+            SnackbarResult.ActionPerformed -> {
+                navController.navigate("profile")
+            }
+            SnackbarResult.Dismissed -> {
+                /* dismissed, no action needed */
+            }
+        }
+
+        return false
+    } else {
+        return true
+    }
+}
 

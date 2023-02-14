@@ -45,16 +45,15 @@ class StationsViewModel : ViewModel() {
         }
     }
 
-    suspend fun fetchStationsById() {
+    suspend fun fetchFavoriteStations() {
         val favoriteStations = Users().getFavorites()
 
-        if (favoriteStations.isNotEmpty()) {
+        if (favoriteStations != null && favoriteStations.isNotEmpty()) {
             openChargeMap.getStationById(favoriteStations.joinToString(",")) { stations, _ ->
                 _favoriteStations.value = stations
             }
         } else {
             _favoriteStations.value = emptyList()
         }
-
     }
 }

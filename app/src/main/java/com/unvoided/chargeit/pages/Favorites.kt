@@ -35,7 +35,7 @@ fun Favorites(navController: NavHostController, stationsViewModel: StationsViewM
         val coroutineScope = rememberCoroutineScope()
         val lazyListState = rememberLazyListState()
         coroutineScope.launch {
-            stationsViewModel.fetchStationsById()
+            stationsViewModel.fetchFavoriteStations()
         }
 
         LoadingComponent(isLoading = favouriteStations == null) {
