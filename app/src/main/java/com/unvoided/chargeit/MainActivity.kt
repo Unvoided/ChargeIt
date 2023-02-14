@@ -240,7 +240,7 @@ fun ChargeItNavHost(
             )
         }
         composable(Pages.HistoryPage.route) { History(navController) }
-        composable(Pages.FavoritesPage.route) { Favorites(navController) }
+        composable(Pages.FavoritesPage.route) { Favorites(navController, stationsViewModel) }
         composable("profile") { Profile() }
     }
 }

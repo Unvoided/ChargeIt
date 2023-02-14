@@ -50,7 +50,7 @@ class OpenChargeMap {
     }
 
     fun getStationById(
-        id: Int,
+        id: String,
         callback: (data: List<Station>?, error: Throwable?) -> Unit
     ) {
         service.getStationById(id).enqueue(object : Callback<List<Station>> {

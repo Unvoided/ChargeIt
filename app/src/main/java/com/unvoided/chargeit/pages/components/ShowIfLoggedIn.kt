@@ -18,7 +18,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
 @Composable
-fun ShowIfLoggedIn(navController: NavHostController, content: @Composable (FirebaseUser) -> Unit?) {
+fun ShowIfLoggedIn(navController: NavHostController, content: @Composable (FirebaseUser) -> Unit) {
     var user by remember { mutableStateOf(Firebase.auth.currentUser) }
     Firebase.auth.addAuthStateListener {
         user = it.currentUser

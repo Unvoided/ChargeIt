@@ -18,12 +18,15 @@ class Users(
         private const val FAVORITE_STATIONS = "favorites"
     }
 
-    suspend fun isFavorite(stationId: Int): Boolean {
-        val favorites = db.collection(USER_COLLECTION)
+    @Suppress("UNCHECKED_CAST")
+    suspend fun getFavorites(): List<Int> =
+        db.collection(USER_COLLECTION)
             .document(userUid)
             .get().await().get(FAVORITE_STATIONS) as ArrayList<Int>
 
-        return favorites.any { it == stationId }
+
+    suspend fun isFavorite(stationId: Int): Boolean {
+        return getFavorites().any { it == stationId }
     }
 
     suspend fun addFavorite(stationId: Int) {
@@ -39,4 +42,5 @@ class Users(
             .set(mapOf("favorites" to FieldValue.arrayRemove(stationId)), SetOptions.merge())
             .await()
     }
+
 }

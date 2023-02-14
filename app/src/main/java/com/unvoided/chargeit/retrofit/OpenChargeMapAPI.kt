@@ -18,6 +18,7 @@ interface OpenChargeMapAPI {
 
     @GET("/poi?output=json&key=${OPEN_CHARGE_MAP_API_KEY}&distanceunit=km")
     fun getStationById(
-        @Query("id") id: Int
+        @Query("id") id: String
     ): Call<List<Station>>
+
 }
