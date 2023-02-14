@@ -17,7 +17,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.unvoided.chargeit.data.Station
-import com.unvoided.chargeit.data.firestore.Users
+import com.unvoided.chargeit.data.firestore.UsersDbActions
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
@@ -124,7 +124,7 @@ fun StationsHistoryItem(
                     }
                     IconButton(onClick = {
                         coroutineScope.launch {
-                            Users().removeFromHistory(historyDate, station.id!!)
+                            UsersDbActions().removeFromHistory(historyDate, station.id!!)
                             stationsViewModel.fetchStationsHistory()
                         }
                     }) {

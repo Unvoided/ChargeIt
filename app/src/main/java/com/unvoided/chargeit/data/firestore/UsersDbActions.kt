@@ -11,7 +11,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 
-class Users(
+class UsersDbActions(
     private val db: FirebaseFirestore = Firebase.firestore,
     private val userUid: String = Firebase.auth.currentUser!!.uid
 ) {

@@ -28,7 +28,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.unvoided.chargeit.data.firestore.Users
+import com.unvoided.chargeit.data.firestore.UsersDbActions
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.pages.subpages.ChargersTab
 import com.unvoided.chargeit.pages.subpages.InfoTab
@@ -64,9 +64,12 @@ fun StationPage(
 
                 coroutineScope.launch {
                     if (Firebase.auth.currentUser != null) {
-                        isFavorite = Users().isFavorite(stationId.toInt())
+                        isFavorite = UsersDbActions().isFavorite(stationId.toInt())
                         isInCurrentDayHistory.value =
-                            Users().isStationInCurrentDayHistory(LocalDate.now(), stationId.toInt())
+                            UsersDbActions().isStationInCurrentDayHistory(
+                                LocalDate.now(),
+                                stationId.toInt()
+                            )
                     }
                 }
 
@@ -270,7 +273,7 @@ suspend fun handleUsed(
     history: MutableState<Boolean>,
     snackbarHostState: SnackbarHostState,
 ) {
-    val userDbActions = Users()
+    val userDbActions = UsersDbActions()
 
     if (!userDbActions.isStationInCurrentDayHistory(LocalDate.now(), stationId)) {
         userDbActions.addToHistory(LocalDate.now(), stationId)
@@ -288,7 +291,7 @@ suspend fun handleFavorite(
     stationId: Int,
     toggleFavoriteCallback: (Boolean) -> Unit
 ) {
-    val userDbActions = Users()
+    val userDbActions = UsersDbActions()
 
     if (userDbActions.isFavorite(stationId)) {
         userDbActions.removeFavorite(stationId)

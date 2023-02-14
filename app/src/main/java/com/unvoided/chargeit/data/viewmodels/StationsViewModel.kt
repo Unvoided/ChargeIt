@@ -5,7 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.unvoided.chargeit.data.Station
-import com.unvoided.chargeit.data.firestore.Users
+import com.unvoided.chargeit.data.firestore.UsersDbActions
 import com.unvoided.chargeit.retrofit.GetStationsInput
 import com.unvoided.chargeit.retrofit.OpenChargeMap
 import java.time.LocalDate
@@ -52,7 +52,7 @@ class StationsViewModel : ViewModel() {
     }
 
     suspend fun fetchFavoriteStations() {
-        val favoriteStat = Users().getFavorites()
+        val favoriteStat = UsersDbActions().getFavorites()
 
         if (favoriteStat != null && favoriteStat.isNotEmpty()) {
             openChargeMap.getStationById(favoriteStat.joinToString(",")) { stations, _ ->
@@ -64,7 +64,7 @@ class StationsViewModel : ViewModel() {
     }
 
     suspend fun fetchStationsHistory() {
-        val statHistory = Users().getHistory()
+        val statHistory = UsersDbActions().getHistory()
 
         if (statHistory != null && statHistory.isNotEmpty()) {
             val ids = ArrayList<Int>()
