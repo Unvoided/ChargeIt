@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Reviews
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,7 +35,6 @@ import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.ui.components.ExpandableText
 import com.unvoided.chargeit.ui.components.ReviewDialog
 import com.unvoided.chargeit.ui.theme.components.LoadingComponent
-import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
 import com.unvoided.chargeit.ui.theme.components.ShowIfNotEmpty
 import kotlinx.coroutines.launch
 
@@ -47,91 +47,102 @@ fun ReviewsTab(
     stationsViewModel: StationsViewModel,
     snackbarHostState: SnackbarHostState
 ) {
-    ShowIfLoggedIn(navController) {
-        val reviews by stationsViewModel.stationReviews.observeAsState()
-        val coroutineScope = rememberCoroutineScope()
+    var user by remember { mutableStateOf(Firebase.auth.currentUser) }
+    Firebase.auth.addAuthStateListener {
+        user = it.currentUser
+    }
+    val reviews by stationsViewModel.stationReviews.observeAsState()
+    val coroutineScope = rememberCoroutineScope()
 
-        LaunchedEffect(key1 = station) {
-            stationsViewModel.fetchStationReviews(station.id.toString())
-        }
+    LaunchedEffect(key1 = station) {
+        stationsViewModel.fetchStationReviews(station.id.toString())
+    }
 
-        LoadingComponent(isLoading = reviews == null, "Loading Reviews") {
-            val openDialog = remember { mutableStateOf(false) }
+    LoadingComponent(isLoading = reviews == null, "Loading Reviews") {
+        val openDialog = remember { mutableStateOf(false) }
 
-            if (!userHasReview(reviews!!)) {
-                ReviewDialog(dialogState = openDialog, message = "Write Review") { review, _ ->
-                    coroutineScope.launch {
-                        handleNewReview(station.id!!, stationsViewModel, review, snackbarHostState)
-                    }
-                }
-            } else if (userHasReview(reviews!!)) {
-                ReviewDialog(
-                    dialogState = openDialog,
-                    message = "Edit Review",
-                    oldReview = reviews!!.first { it.userUid == Firebase.auth.uid }) { newReview, oldReview ->
-                    coroutineScope.launch {
-                        handleOldReview(
-                            station.id!!,
-                            stationsViewModel,
-                            newReview,
-                            oldReview!!,
-                            snackbarHostState
-                        )
-                    }
+        if (user != null && !userHasReview(reviews!!)) {
+            ReviewDialog(dialogState = openDialog, message = "Write Review") { review, _ ->
+                coroutineScope.launch {
+                    handleNewReview(station.id!!, stationsViewModel, review, snackbarHostState)
                 }
             }
-            Scaffold(
-                floatingActionButtonPosition = FabPosition.Center,
-                floatingActionButton = {
+        } else if (user != null && userHasReview(reviews!!)) {
+            ReviewDialog(
+                dialogState = openDialog,
+                message = "Edit Review",
+                oldReview = reviews!!.first { it.userUid == Firebase.auth.uid }) { newReview, oldReview ->
+                coroutineScope.launch {
+                    handleOldReview(
+                        station.id!!,
+                        stationsViewModel,
+                        newReview,
+                        oldReview!!,
+                        snackbarHostState
+                    )
+                }
+            }
+        }
+        Scaffold(
+            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButton = {
+                if (user != null) {
                     FilledTonalButton(onClick = { openDialog.value = true }) {
                         Icon(Icons.Outlined.DriveFileRenameOutline, "Review")
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(if (userHasReview(reviews!!)) "Edit Review" else "Write Review")
                     }
-                },
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                } else {
+                    FilledTonalButton(onClick = { navController.navigate("profile") }) {
+                        Icon(Icons.Outlined.PersonOutline, "Sign Up")
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Sign Up to Review")
+                    }
+                }
+            },
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                ShowIfNotEmpty(
+                    icon = Icons.Outlined.Reviews,
+                    isEmpty = reviews!!.isEmpty(),
+                    message = "No Reviews"
                 ) {
-                    ShowIfNotEmpty(
-                        icon = Icons.Outlined.Reviews,
-                        isEmpty = reviews!!.isEmpty(),
-                        message = "No Reviews"
+                    val lazyListState = rememberLazyListState()
+                    LazyColumn(
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        val lazyListState = rememberLazyListState()
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            if (userHasReview(reviews!!)) {
-                                item {
-                                    ReviewItem(
-                                        review = reviews!!.first { it.userUid == Firebase.auth.uid },
-                                        true
-                                    ) { review ->
-                                        coroutineScope.launch {
-                                            handleDeleteReview(
-                                                station.id!!,
-                                                stationsViewModel,
-                                                review,
-                                                snackbarHostState
-                                            )
-                                        }
+                        if (user != null && userHasReview(reviews!!)) {
+                            item {
+                                ReviewItem(
+                                    review = reviews!!.first { it.userUid == Firebase.auth.uid },
+                                    true
+                                ) { review ->
+                                    coroutineScope.launch {
+                                        handleDeleteReview(
+                                            station.id!!,
+                                            stationsViewModel,
+                                            review,
+                                            snackbarHostState
+                                        )
                                     }
                                 }
                             }
-                            reviews!!.filter { it.userUid != Firebase.auth.uid }.forEach {
-                                item { ReviewItem(it, false) }
-                            }
+                        }
+                        reviews!!.filter { it.userUid != Firebase.auth.uid }.forEach {
+                            item { ReviewItem(it, false) }
                         }
                     }
                 }
             }
         }
-
     }
+
+
 }
 
 @Composable
@@ -156,7 +167,7 @@ fun ReviewItem(review: Review, isCurrentUser: Boolean, onDelete: (Review) -> Uni
                     )
                 }
                 Spacer(modifier = Modifier.size(10.dp))
-                Text(review.userName, fontWeight = FontWeight.Bold)
+                Text(review.userName!!, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.size(10.dp))
                 Badge(containerColor = MaterialTheme.colorScheme.primary) {
                     Text(review.rating.toString(), maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -176,7 +187,8 @@ fun ReviewItem(review: Review, isCurrentUser: Boolean, onDelete: (Review) -> Uni
             Box(
                 Modifier
                     .wrapContentSize()
-                    .padding(start = 35.dp, top = 5.dp, bottom = 5.dp)) {
+                    .padding(start = 35.dp)
+            ) {
                 ExpandableText(
                     text = review.comment,
                     minimizedMaxLines = 3

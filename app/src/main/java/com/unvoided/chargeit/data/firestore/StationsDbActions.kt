@@ -1,6 +1,5 @@
 package com.unvoided.chargeit.data.firestore
 
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -12,7 +11,6 @@ import java.text.DecimalFormat
 
 class StationsDbActions(
     private val db: FirebaseFirestore = Firebase.firestore,
-    private val userUid: String = Firebase.auth.currentUser!!.uid
 ) {
     companion object {
         private const val STATIONS_COLLECTION = "stations"

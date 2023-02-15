@@ -72,10 +72,10 @@ fun StationPage(
                                 LocalDate.now(),
                                 stationId.toInt()
                             )
-                        val tempReviewAvg = StationsDbActions().getReviewsAvg(stationId)
-                        if (tempReviewAvg != null) {
-                            reviewAvg = " ($tempReviewAvg"
-                        }
+                    }
+                    val tempReviewAvg = StationsDbActions().getReviewsAvg(stationId)
+                    if (tempReviewAvg != null) {
+                        reviewAvg = " ($tempReviewAvg"
                     }
                 }
 
