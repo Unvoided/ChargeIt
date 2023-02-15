@@ -270,7 +270,12 @@ fun StationPage(
                                     ChargersTab(station)
                                 }
                                 2 -> {
-                                    ReviewsTab(navController, station, stationsViewModel)
+                                    ReviewsTab(
+                                        navController,
+                                        station,
+                                        stationsViewModel,
+                                        snackState
+                                    )
                                 }
                             }
                         }

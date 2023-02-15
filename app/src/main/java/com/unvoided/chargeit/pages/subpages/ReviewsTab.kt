@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Reviews
 import androidx.compose.material3.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -29,6 +31,7 @@ import com.unvoided.chargeit.data.Review
 import com.unvoided.chargeit.data.Station
 import com.unvoided.chargeit.data.firestore.StationsDbActions
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
+import com.unvoided.chargeit.ui.components.ExpandableText
 import com.unvoided.chargeit.ui.components.ReviewDialog
 import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
@@ -41,7 +44,8 @@ import kotlinx.coroutines.launch
 fun ReviewsTab(
     navController: NavHostController,
     station: Station,
-    stationsViewModel: StationsViewModel
+    stationsViewModel: StationsViewModel,
+    snackbarHostState: SnackbarHostState
 ) {
     ShowIfLoggedIn(navController) {
         val reviews by stationsViewModel.stationReviews.observeAsState()
@@ -57,7 +61,7 @@ fun ReviewsTab(
             if (!userHasReview(reviews!!)) {
                 ReviewDialog(dialogState = openDialog, message = "Write Review") { review, _ ->
                     coroutineScope.launch {
-                        handleNewReview(station.id!!, stationsViewModel, review)
+                        handleNewReview(station.id!!, stationsViewModel, review, snackbarHostState)
                     }
                 }
             } else if (userHasReview(reviews!!)) {
@@ -66,7 +70,13 @@ fun ReviewsTab(
                     message = "Edit Review",
                     oldReview = reviews!!.first { it.userUid == Firebase.auth.uid }) { newReview, oldReview ->
                     coroutineScope.launch {
-                        handleOldReview(station.id!!, stationsViewModel, newReview, oldReview!!)
+                        handleOldReview(
+                            station.id!!,
+                            stationsViewModel,
+                            newReview,
+                            oldReview!!,
+                            snackbarHostState
+                        )
                     }
                 }
             }
@@ -79,13 +89,6 @@ fun ReviewsTab(
                         Text(if (userHasReview(reviews!!)) "Edit Review" else "Write Review")
                     }
                 },
-                topBar = {
-                    LazyColumn() {
-                        if (userHasReview(reviews!!)) {
-                            item { ReviewItem(review = reviews!!.first { it.userUid == Firebase.auth.uid }) }
-                        }
-                    }
-                }
             ) { paddingValues ->
                 Box(
                     modifier = Modifier
@@ -102,9 +105,25 @@ fun ReviewsTab(
                             state = lazyListState,
                             modifier = Modifier.fillMaxSize()
                         ) {
-
+                            if (userHasReview(reviews!!)) {
+                                item {
+                                    ReviewItem(
+                                        review = reviews!!.first { it.userUid == Firebase.auth.uid },
+                                        true
+                                    ) { review ->
+                                        coroutineScope.launch {
+                                            handleDeleteReview(
+                                                station.id!!,
+                                                stationsViewModel,
+                                                review,
+                                                snackbarHostState
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                             reviews!!.filter { it.userUid != Firebase.auth.uid }.forEach {
-                                item { ReviewItem(it) }
+                                item { ReviewItem(it, false) }
                             }
                         }
                     }
@@ -116,38 +135,54 @@ fun ReviewsTab(
 }
 
 @Composable
-fun ReviewItem(review: Review) {
+fun ReviewItem(review: Review, isCurrentUser: Boolean, onDelete: (Review) -> Unit = {}) {
     ListItem(
-        leadingContent = {
-            if (review.userPictureUrl != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        review.userPictureUrl
-                    ),
-                    contentDescription = "Account",
-                    Modifier
-                        .clip(CircleShape)
-                        .size(24.dp)
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = "Account"
-                )
-            }
-        },
         headlineText = {
             Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                if (review.userPictureUrl != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            review.userPictureUrl
+                        ),
+                        contentDescription = "Account",
+                        Modifier
+                            .clip(CircleShape)
+                            .size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = "Account"
+                    )
+                }
+                Spacer(modifier = Modifier.size(10.dp))
                 Text(review.userName, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.size(10.dp))
                 Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                    Text(review.rating.toString())
+                    Text(review.rating.toString(), maxLines = 3, overflow = TextOverflow.Ellipsis)
                     Icon(Icons.Filled.Star, "Rating", Modifier.size(10.dp))
                 }
+                if (isCurrentUser) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                        IconButton(onClick = { onDelete(review) }) {
+                            Icon(Icons.Outlined.DeleteForever, "Delete Review")
+                        }
+                    }
+                }
+
             }
         },
         supportingText = {
-            Text(text = review.comment)
+            Box(
+                Modifier
+                    .wrapContentSize()
+                    .padding(start = 35.dp, top = 5.dp, bottom = 5.dp)) {
+                ExpandableText(
+                    text = review.comment,
+                    minimizedMaxLines = 3
+                )
+            }
+
         }
     )
     Divider()
@@ -162,22 +197,58 @@ fun userHasReview(reviews: List<Review>): Boolean {
 
 }
 
-suspend fun handleNewReview(stationId: Int, stationsViewModel: StationsViewModel, review: Review) {
+suspend fun handleNewReview(
+    stationId: Int,
+    stationsViewModel: StationsViewModel,
+    review: Review,
+    snackbarHostState: SnackbarHostState
+) {
     val stationsDbActions = StationsDbActions()
 
     stationsDbActions.addReview(stationId.toString(), review)
     stationsViewModel.fetchStationReviews(stationId.toString())
+
+    snackbarHostState.showSnackbar(
+        "Review added successfully!",
+        duration = SnackbarDuration.Short,
+        withDismissAction = true
+    )
 }
 
 suspend fun handleOldReview(
     stationId: Int,
     stationsViewModel: StationsViewModel,
     newReview: Review,
-    oldReview: Review
+    oldReview: Review,
+    snackbarHostState: SnackbarHostState
 ) {
     val stationsDbActions = StationsDbActions()
 
     stationsDbActions.removeReview(stationId.toString(), oldReview)
     stationsDbActions.addReview(stationId.toString(), newReview)
     stationsViewModel.fetchStationReviews(stationId.toString())
+
+    snackbarHostState.showSnackbar(
+        "Review edited successfully!",
+        duration = SnackbarDuration.Short,
+        withDismissAction = true
+    )
+}
+
+suspend fun handleDeleteReview(
+    stationId: Int,
+    stationsViewModel: StationsViewModel,
+    oldReview: Review,
+    snackbarHostState: SnackbarHostState
+) {
+    val stationsDbActions = StationsDbActions()
+
+    stationsDbActions.removeReview(stationId.toString(), oldReview)
+    stationsViewModel.fetchStationReviews(stationId.toString())
+
+    snackbarHostState.showSnackbar(
+        "Review deleted successfully!",
+        duration = SnackbarDuration.Short,
+        withDismissAction = true
+    )
 }
