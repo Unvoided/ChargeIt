@@ -17,13 +17,13 @@ class UsersDbActions(
 ) {
 
     companion object {
-        private const val USER_COLLECTION = "users"
+        private const val USERS_COLLECTION = "users"
         private const val FAVORITE_STATIONS = "favorites"
         private const val STATIONS_HISTORY = "history"
     }
 
     suspend fun getFavorites() =
-        db.collection(USER_COLLECTION).document(userUid).get().await()
+        db.collection(USERS_COLLECTION).document(userUid).get().await()
             .get(FAVORITE_STATIONS) as ArrayList<Int>?
 
 
@@ -32,13 +32,14 @@ class UsersDbActions(
     }
 
     suspend fun addFavorite(stationId: Int) {
-        db.collection(USER_COLLECTION).document(userUid)
-            .set(mapOf("favorites" to FieldValue.arrayUnion(stationId)), SetOptions.merge()).await()
+        db.collection(USERS_COLLECTION).document(userUid)
+            .set(mapOf(FAVORITE_STATIONS to FieldValue.arrayUnion(stationId)), SetOptions.merge())
+            .await()
     }
 
     suspend fun removeFavorite(stationId: Int) {
-        db.collection(USER_COLLECTION).document(userUid)
-            .set(mapOf("favorites" to FieldValue.arrayRemove(stationId)), SetOptions.merge())
+        db.collection(USERS_COLLECTION).document(userUid)
+            .set(mapOf(FAVORITE_STATIONS to FieldValue.arrayRemove(stationId)), SetOptions.merge())
             .await()
     }
 
@@ -47,12 +48,12 @@ class UsersDbActions(
     }
 
     suspend fun getHistory() =
-        db.collection(USER_COLLECTION).document(userUid).get().await()
+        db.collection(USERS_COLLECTION).document(userUid).get().await()
             .get(STATIONS_HISTORY) as Map<String, List<Int>>?
 
 
     suspend fun addToHistory(currentDate: LocalDate, stationId: Int) {
-        db.collection(USER_COLLECTION).document(userUid).set(
+        db.collection(USERS_COLLECTION).document(userUid).set(
             mapOf(
                 STATIONS_HISTORY to mapOf(
                     currentDate.toString() to FieldValue.arrayUnion(
@@ -65,7 +66,7 @@ class UsersDbActions(
     }
 
     suspend fun removeFromHistory(currentDate: LocalDate, stationId: Int) {
-        db.collection(USER_COLLECTION).document(userUid).set(
+        db.collection(USERS_COLLECTION).document(userUid).set(
             mapOf(
                 STATIONS_HISTORY to mapOf(
                     currentDate.toString() to FieldValue.arrayRemove(

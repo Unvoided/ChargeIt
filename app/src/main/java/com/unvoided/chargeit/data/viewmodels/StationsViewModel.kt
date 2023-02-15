@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.unvoided.chargeit.data.Review
 import com.unvoided.chargeit.data.Station
+import com.unvoided.chargeit.data.firestore.StationsDbActions
 import com.unvoided.chargeit.data.firestore.UsersDbActions
 import com.unvoided.chargeit.retrofit.GetStationsInput
 import com.unvoided.chargeit.retrofit.OpenChargeMap
@@ -14,6 +16,7 @@ class StationsViewModel : ViewModel() {
     private val openChargeMap = OpenChargeMap()
     private val _stations = MutableLiveData<List<Station>>()
     private val _station = MutableLiveData<Station>()
+    private val _stationReviews = MutableLiveData<List<Review>>()
     private val _favoriteStations = MutableLiveData<List<Station>>()
     private val _stationsHistory = MutableLiveData<Map<LocalDate, List<Station>>>()
 
@@ -22,6 +25,9 @@ class StationsViewModel : ViewModel() {
 
     val station: LiveData<Station>
         get() = _station
+
+    val stationReviews: LiveData<List<Review>>
+        get() = _stationReviews
 
     val favoriteStations: MutableLiveData<List<Station>>
         get() = _favoriteStations
@@ -35,6 +41,21 @@ class StationsViewModel : ViewModel() {
         openChargeMap.getStations(params) { stations, _ ->
             _stations.value = stations
         }
+    }
+
+    fun clearPrevReviews() {
+        _stationReviews.value = null
+    }
+
+    suspend fun fetchStationReviews(id: String) {
+        val reviews = StationsDbActions().getReviews(id)
+
+        if (reviews != null && reviews.isNotEmpty()) {
+            _stationReviews.value = reviews
+        } else {
+            _stationReviews.value = emptyList()
+        }
+
     }
 
     fun fetchStationById(id: Int) {
