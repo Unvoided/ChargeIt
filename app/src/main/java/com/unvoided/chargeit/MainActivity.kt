@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
 
             val builder = NotificationCompat.Builder(applicationContext, "location_notification")
                 .setSmallIcon(R.drawable.ic_stat_notifications)
-                .setContentTitle("ChargeIt - Location")
+                .setContentTitle("Location")
                 .setContentText("Latitude: ${location.latitude} | Longitude: ${location.longitude}")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setOngoing(true)
