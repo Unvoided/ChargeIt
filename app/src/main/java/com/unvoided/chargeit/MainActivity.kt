@@ -159,9 +159,18 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         if (listeningToUpdates) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
+            listeningToUpdates = false
         }
         with(NotificationManagerCompat.from(applicationContext)) {
             cancelAll()
+        }
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        if (!listeningToUpdates) {
+            startUpdatingLocation()
+            listeningToUpdates = true
         }
     }
 
