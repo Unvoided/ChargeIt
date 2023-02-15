@@ -3,7 +3,10 @@
 package com.unvoided.chargeit
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.Manifest.permission.POST_NOTIFICATIONS
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -27,6 +30,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -52,13 +57,26 @@ class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var listeningToUpdates = false
     private val locationCallback: LocationCallback = object : LocationCallback() {
+        @SuppressLint("MissingPermission")
         @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         override fun onLocationResult(locationResult: LocationResult) {
             val location = locationResult.locations.first()
             locationViewModel.updateLocation(location)
+
+            val builder = NotificationCompat.Builder(applicationContext, "location_notification")
+                .setSmallIcon(R.drawable.ic_stat_notifications)
+                .setContentTitle("ChargeIt - Location")
+                .setContentText("Latitude: ${location.latitude} | Longitude: ${location.longitude}")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOngoing(true)
+
+            with(NotificationManagerCompat.from(applicationContext)) {
+                notify(1, builder.build())
+            }
             Log.d("Location#Callback", location.toString())
         }
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,12 +109,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
     override fun onStart() {
         super.onStart()
         if (checkSelfPermission(ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(ACCESS_FINE_LOCATION), 0)
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(
+                POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(POST_NOTIFICATIONS), 1)
+        }
+        createNotificationChannel()
     }
+
+    private fun createNotificationChannel() {
+        val name = "Location Notification"
+        val descriptionText = "Show current latitude and longitude in a notification"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel("location_notification", name, importance).apply {
+            description = descriptionText
+        }
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+
 
     @SuppressLint("MissingPermission")
     private fun startUpdatingLocation() {
@@ -120,6 +159,9 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         if (listeningToUpdates) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+        with(NotificationManagerCompat.from(applicationContext)) {
+            cancelAll()
         }
     }
 
