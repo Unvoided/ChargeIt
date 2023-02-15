@@ -7,8 +7,8 @@ import com.google.firebase.ktx.Firebase
 data class Review(
     val userUid: String = Firebase.auth.currentUser!!.uid,
     val userName: String = Firebase.auth.currentUser!!.displayName!!,
-    val userPictureUrl: String? = Firebase.auth.currentUser!!.photoUrl?.toString(),
+    val userPictureUrl: String? = null,
     val timestamp: Timestamp = Timestamp.now(),
-    val rating: Int,
-    val comment: String
+    val rating: Int = 0,
+    val comment: String = ""
 )

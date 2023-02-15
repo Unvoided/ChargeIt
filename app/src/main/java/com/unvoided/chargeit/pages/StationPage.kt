@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.*
@@ -28,6 +29,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.unvoided.chargeit.data.firestore.StationsDbActions
 import com.unvoided.chargeit.data.firestore.UsersDbActions
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.pages.subpages.ChargersTab
@@ -61,7 +63,7 @@ fun StationPage(
                 var isFavorite by remember { mutableStateOf(false) }
                 val isInCurrentDayHistory = remember { mutableStateOf(false) }
                 val snackState = remember { SnackbarHostState() }
-
+                var reviewAvg by remember { mutableStateOf<String?>(null) }
                 coroutineScope.launch {
                     if (Firebase.auth.currentUser != null) {
                         isFavorite = UsersDbActions().isFavorite(stationId.toInt())
@@ -70,11 +72,19 @@ fun StationPage(
                                 LocalDate.now(),
                                 stationId.toInt()
                             )
+                        val tempReviewAvg = StationsDbActions().getReviewsAvg(stationId)
+                        if (tempReviewAvg != null) {
+                            reviewAvg = " ($tempReviewAvg"
+                        }
                     }
                 }
 
                 val titles =
-                    listOf("Info", "Connections (${station.connections?.count() ?: 0})", "Reviews")
+                    listOf(
+                        "Info",
+                        "Connections (${station.connections?.count() ?: 0})",
+                        "Reviews${reviewAvg ?: ""}"
+                    )
 
                 val openDialog = remember { mutableStateOf(false) }
 
@@ -232,11 +242,22 @@ fun StationPage(
                                     Tab(selected = state == index,
                                         onClick = { state = index },
                                         text = {
-                                            Text(
-                                                text = title,
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = title,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                if (title.startsWith("Reviews") && reviewAvg != null) {
+                                                    Icon(
+                                                        Icons.Filled.Star,
+                                                        "Reviews",
+                                                        modifier = Modifier.size(10.dp)
+                                                    )
+                                                    Text(")")
+                                                }
+                                            }
+
                                         })
                                 }
                             }

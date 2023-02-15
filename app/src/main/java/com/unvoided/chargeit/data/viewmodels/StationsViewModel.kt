@@ -49,7 +49,7 @@ class StationsViewModel : ViewModel() {
 
     suspend fun fetchStationReviews(id: String) {
         val reviews = StationsDbActions().getReviews(id)
-
+        clearPrevReviews()
         if (reviews != null && reviews.isNotEmpty()) {
             _stationReviews.value = reviews
         } else {

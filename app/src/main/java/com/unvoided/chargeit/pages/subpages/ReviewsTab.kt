@@ -2,6 +2,7 @@
 
 package com.unvoided.chargeit.pages.subpages
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Reviews
 import androidx.compose.material3.*
@@ -25,13 +27,15 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.unvoided.chargeit.data.Review
 import com.unvoided.chargeit.data.Station
+import com.unvoided.chargeit.data.firestore.StationsDbActions
 import com.unvoided.chargeit.data.viewmodels.StationsViewModel
 import com.unvoided.chargeit.ui.components.ReviewDialog
 import com.unvoided.chargeit.ui.theme.components.LoadingComponent
 import com.unvoided.chargeit.ui.theme.components.ShowIfLoggedIn
 import com.unvoided.chargeit.ui.theme.components.ShowIfNotEmpty
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewsTab(
@@ -41,27 +45,29 @@ fun ReviewsTab(
 ) {
     ShowIfLoggedIn(navController) {
         val reviews by stationsViewModel.stationReviews.observeAsState()
+        val coroutineScope = rememberCoroutineScope()
 
-        stationsViewModel.clearPrevReviews()
-
-        runBlocking {
+        LaunchedEffect(key1 = station) {
             stationsViewModel.fetchStationReviews(station.id.toString())
         }
 
         LoadingComponent(isLoading = reviews == null, "Loading Reviews") {
-            val userHasReview = remember { mutableStateOf(userHasReview(reviews!!)) }
             val openDialog = remember { mutableStateOf(false) }
 
-            if (!userHasReview.value) {
+            if (!userHasReview(reviews!!)) {
                 ReviewDialog(dialogState = openDialog, message = "Write Review") { review, _ ->
-                    handleNewReview(review)
+                    coroutineScope.launch {
+                        handleNewReview(station.id!!, stationsViewModel, review)
+                    }
                 }
-            } else {
+            } else if (userHasReview(reviews!!)) {
                 ReviewDialog(
                     dialogState = openDialog,
-                    message = "Write Review",
-                    oldReview = reviews!!.first { it.userUid == Firebase.auth.uid }) { review, oldReview ->
-                    handleOldReview(review, oldReview)
+                    message = "Edit Review",
+                    oldReview = reviews!!.first { it.userUid == Firebase.auth.uid }) { newReview, oldReview ->
+                    coroutineScope.launch {
+                        handleOldReview(station.id!!, stationsViewModel, newReview, oldReview!!)
+                    }
                 }
             }
             Scaffold(
@@ -70,12 +76,15 @@ fun ReviewsTab(
                     FilledTonalButton(onClick = { openDialog.value = true }) {
                         Icon(Icons.Outlined.DriveFileRenameOutline, "Review")
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(if (userHasReview.value) "Edit Review" else "Write Review")
+                        Text(if (userHasReview(reviews!!)) "Edit Review" else "Write Review")
                     }
                 },
                 topBar = {
-                    if (userHasReview.value)
-                        ReviewItem(review = reviews!!.first { it.userUid == Firebase.auth.uid })
+                    LazyColumn() {
+                        if (userHasReview(reviews!!)) {
+                            item { ReviewItem(review = reviews!!.first { it.userUid == Firebase.auth.uid }) }
+                        }
+                    }
                 }
             ) { paddingValues ->
                 Box(
@@ -93,6 +102,7 @@ fun ReviewsTab(
                             state = lazyListState,
                             modifier = Modifier.fillMaxSize()
                         ) {
+
                             reviews!!.filter { it.userUid != Firebase.auth.uid }.forEach {
                                 item { ReviewItem(it) }
                             }
@@ -130,8 +140,9 @@ fun ReviewItem(review: Review) {
             Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 Text(review.userName, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.size(10.dp))
-                Badge {
+                Badge(containerColor = MaterialTheme.colorScheme.primary) {
                     Text(review.rating.toString())
+                    Icon(Icons.Filled.Star, "Rating", Modifier.size(10.dp))
                 }
             }
         },
@@ -139,16 +150,34 @@ fun ReviewItem(review: Review) {
             Text(text = review.comment)
         }
     )
+    Divider()
 }
 
 fun userHasReview(reviews: List<Review>): Boolean {
-    return reviews.any { it.userUid == Firebase.auth.uid!! }
+    return if (reviews.isNotEmpty()) {
+        reviews.any { it.userUid == Firebase.auth.uid!! }
+    } else {
+        false
+    }
+
 }
 
-fun handleNewReview(review: Review) {
+suspend fun handleNewReview(stationId: Int, stationsViewModel: StationsViewModel, review: Review) {
+    val stationsDbActions = StationsDbActions()
 
+    stationsDbActions.addReview(stationId.toString(), review)
+    stationsViewModel.fetchStationReviews(stationId.toString())
 }
 
-fun handleOldReview(review: Review, oldReview: Review?) {
+suspend fun handleOldReview(
+    stationId: Int,
+    stationsViewModel: StationsViewModel,
+    newReview: Review,
+    oldReview: Review
+) {
+    val stationsDbActions = StationsDbActions()
 
+    stationsDbActions.removeReview(stationId.toString(), oldReview)
+    stationsDbActions.addReview(stationId.toString(), newReview)
+    stationsViewModel.fetchStationReviews(stationId.toString())
 }

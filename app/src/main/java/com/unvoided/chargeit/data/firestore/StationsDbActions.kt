@@ -8,6 +8,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.unvoided.chargeit.data.Review
 import kotlinx.coroutines.tasks.await
+import java.text.DecimalFormat
 
 class StationsDbActions(
     private val db: FirebaseFirestore = Firebase.firestore,
@@ -37,8 +38,22 @@ class StationsDbActions(
         addReview(stationId, newReview)
     }
 
-    suspend fun getReviews(stationId: String) =
+    suspend fun getReviews(stationId: String): List<Review>? =
         db.collection(STATIONS_COLLECTION).document(stationId).get().await()
-            .get(REVIEWS) as List<Review>?
+            .toObject(ReviewsResponse::class.java)?.reviews
+
+    suspend fun getReviewsAvg(stationId: String): String? {
+        val reviews = getReviews(stationId)
+        if (reviews != null && reviews.isNotEmpty()) {
+            return DecimalFormat("#.#").format(reviews.stream().mapToInt { it.rating }
+                .average().asDouble)
+        }
+        return null
+    }
 }
+
+data class ReviewsResponse(
+    val reviews: List<Review>? = null
+)
+
 

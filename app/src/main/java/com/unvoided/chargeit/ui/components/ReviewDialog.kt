@@ -1,6 +1,8 @@
 package com.unvoided.chargeit.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -24,7 +26,7 @@ fun ReviewDialog(
 ) {
     if (dialogState.value) {
         val ratingOptions = listOf(1, 2, 3, 4, 5)
-        var selectedRating by remember { mutableStateOf(ratingOptions[0]) }
+        var selectedRating by remember { mutableStateOf(oldReview?.rating ?: ratingOptions[0]) }
 
 
         var text by rememberSaveable { mutableStateOf(oldReview?.comment ?: "") }
@@ -37,7 +39,11 @@ fun ReviewDialog(
                     .wrapContentHeight(),
                 shape = MaterialTheme.shapes.large
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
                     Text(
                         message,
                         fontWeight = FontWeight.SemiBold,
